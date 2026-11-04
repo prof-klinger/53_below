@@ -1,2 +1,2 @@
 #!/bin/bash
-open "$(dirname "$0")/Bk4iJHeF-index.html"
+open "https://prof-klinger.github.io/53_below/Bk4iJHeF-index.html"
