@@ -62,10 +62,10 @@ const start={x:475,y:1675}, beacon={x:2475,y:475};
 let rocks, tries=0;
 do{
  rocks=[]; tries++;
- for(let i=0;i<48;i++){
+ for(let i=0;i<150;i++){
    const r=55+Math.random()*85, x=90+r+Math.random()*(WORLD.w-180-2*r), y=90+r+Math.random()*(WORLD.h-180-2*r);
    if(Math.hypot(x-start.x,y-start.y)<r*1.2+150||Math.hypot(x-beacon.x,y-beacon.y)<r*1.2+150)continue;
-   if(rocks.some(o=>Math.hypot(x-o.x,y-o.y)<(r+o.r)*1.15+50))continue;
+   if(rocks.some(o=>Math.hypot(x-o.x,y-o.y)<(r+o.r)*1.15+5))continue;
    const n=8+Math.floor(Math.random()*4), pts=[];
    for(let k=0;k<n;k++){
      const a=k*Math.PI*2/n+(Math.random()-.5)*.5, rr=r*(.72+Math.random()*.4);
