@@ -14,7 +14,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 25%,#102719 0,#030806 65
 header{height:42px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin-bottom:16px;font-size:13px;letter-spacing:2px}
 .brand{display:flex;gap:11px;align-items:center;color:#c2ffda}.dot{width:7px;height:7px;border-radius:50%;background:#6df4a8;box-shadow:0 0 9px #6df4a8;display:inline-block}
 .subtle{color:#548d6b;font-size:10px}
-.panels{display:grid;grid-template-columns:1fr 1fr;border:1px solid #286044;background:#050b09;box-shadow:0 0 28px #28b46412;overflow:hidden}
+.panels{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #286044;background:#050b09;box-shadow:0 0 28px #28b46412;overflow:hidden}
 .panel{position:relative;min-width:0}
 .panel+ .panel{border-left:1px solid #286044}
 .panel-title{height:32px;padding:9px 12px;background:#07130c;border-bottom:1px solid #286044;font-size:10px;letter-spacing:2px;display:flex;justify-content:space-between}
@@ -49,14 +49,15 @@ button:hover{background:#123321;border-color:#70d99c}
 <section class="panels">
  <div class="panel"><div class="panel-title">01 / HEADING <span>COMPASS</span></div><div class="hud compass-readout"><span>DIRECTION <b id="heading">NORTH</b></span></div><canvas id="pilot" width="800" height="710"></canvas></div>
  <div class="panel"><div class="panel-title">02 / NAVIGATION <span>LOCAL MAP</span></div><div class="hud map-readout"><span>TACTICAL DISPLAY</span></div><canvas id="map" width="800" height="710"></canvas></div>
+ <div class="panel"><div class="panel-title">03 / SIGNAL <span>REL BEARING</span></div><div class="hud compass-readout"><span>BEARING <b id="bearing">---</b></span></div><canvas id="signal" width="800" height="710"></canvas></div>
 </section>
 <section class="mission"><div class="mission-tag">CURRENT OBJECTIVE</div><div class="mission-copy"><strong>REACH THE SIGNAL SOURCE</strong><span>Navigate to the amber beacon. Rock formations block your route.</span></div><div class="state" id="state"><i></i> IN PROGRESS</div></section>
 <footer class="bottom"><div class="keyguide"><div class="keyset"><span class="key">W</span><span class="key">S</span><small>FORWARD / REVERSE</small></div><div class="keyset"><span class="key">A</span><span class="key">D</span><small>TURN LEFT / RIGHT</small></div></div><div class="note">OPEN WATER　·　VISIBILITY LOW　·　KEEP COURSE</div><button id="restart">RESTART MISSION ↻</button></footer>
 </div><div class="scanlines"></div>
 <script>
 (() => {
-const WORLD={w:2600,h:1900}, pilot=document.getElementById('pilot'), map=document.getElementById('map');
-const pctx=pilot.getContext('2d'), mctx=map.getContext('2d');
+const WORLD={w:2600,h:1900}, pilot=document.getElementById('pilot'), map=document.getElementById('map'), sig=document.getElementById('signal');
+const pctx=pilot.getContext('2d'), mctx=map.getContext('2d'), sctx=sig.getContext('2d');
 const rocks=[
 {x:720,y:1240,r:92},{x:900,y:1040,r:65},{x:1190,y:1330,r:125},{x:1420,y:970,r:82},
 {x:1680,y:700,r:115},{x:1940,y:520,r:72},{x:1880,y:1160,r:140},{x:1050,y:520,r:105},
@@ -142,6 +143,38 @@ function renderPilot(){
  pctx.fillText('CURRENT HEADING',0,radius+72);
  pctx.restore();
 }
+function renderSignal(){
+ const w=sig.width,h=sig.height,cx=w/2,cy=h/2;
+ sctx.fillStyle='#050b09';sctx.fillRect(0,0,w,h);
+ const radius=Math.min(w,h)*.34;
+ const dx=beacon.x-sub.x,dy=beacon.y-sub.y, dist=Math.hypot(dx,dy);
+ const rel=Math.atan2(dx,-dy)-sub.a;
+ sctx.save();sctx.translate(cx,cy);
+ sctx.strokeStyle='#286044';sctx.lineWidth=2;
+ sctx.beginPath();sctx.arc(0,0,radius,0,Math.PI*2);sctx.stroke();
+ for(let i=0;i<36;i++){
+   const a=i*Math.PI*2/36, major=i%9===0, inner=radius-(major?20:10);
+   sctx.strokeStyle=major?'#8cf5b8':'#548d6b';
+   sctx.globalAlpha=major?.95:.4;sctx.lineWidth=major?2:1;
+   sctx.beginPath();sctx.moveTo(Math.sin(a)*inner,-Math.cos(a)*inner);sctx.lineTo(Math.sin(a)*radius,-Math.cos(a)*radius);sctx.stroke();
+ }
+ sctx.globalAlpha=1;
+ sctx.font='18px monospace';sctx.textAlign='center';sctx.textBaseline='middle';sctx.fillStyle='#548d6b';
+ sctx.fillText('AHEAD',0,-radius-32);
+ sctx.fillText('STARBOARD',radius+46,0);
+ sctx.fillText('ASTERN',0,radius+32);
+ sctx.fillText('PORT',-radius-40,0);
+ sctx.save();sctx.rotate(rel);
+ sctx.fillStyle='#ffc66d';
+ sctx.beginPath();sctx.moveTo(0,-radius-6);sctx.lineTo(-8,-radius+12);sctx.lineTo(8,-radius+12);sctx.closePath();sctx.fill();
+ sctx.restore();
+ drawSub(sctx,0,0,0,1.7);
+ sctx.fillStyle='#548d6b';sctx.font='13px monospace';
+ sctx.fillText('RELATIVE BEARING',0,radius+58);
+ sctx.restore();
+ const deg=Math.round(((rel*180/Math.PI)%360+360)%360);
+ document.getElementById('bearing').textContent=String(deg).padStart(3,'0')+'° · '+Math.round(dist)+'m';
+}
 function renderMap(){
  const w=map.width,h=map.height;
  const scale=0.68;
@@ -184,7 +217,7 @@ function frame(){
  if(!done&&Math.hypot(sub.x-beacon.x,sub.y-beacon.y)<58){done=true;const s=document.getElementById('state');s.className='state done';s.innerHTML='<i></i> OBJECTIVE COMPLETE'}
  const deg=(sub.a*180/Math.PI+360)%360,dirs=['N','NE','E','SE','S','SW','W','NW'];
  document.getElementById('heading').textContent=dirs[Math.round(deg/45)%8];
- renderPilot();renderMap();requestAnimationFrame(frame);
+ renderPilot();renderMap();renderSignal();requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 })();
