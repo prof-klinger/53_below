@@ -206,9 +206,9 @@ function frame(){
  const turn=(keys.has('a')?-1:0)+(keys.has('d')?1:0);
  const thrust=(keys.has('w')?1:0)-(keys.has('s')?2:0);
  sub.a+=turn*2.65*dt;
- if(thrust>0)sub.v+=320*dt;
- else if(thrust<0)sub.v-=480*dt;
- sub.v-=sub.v*1.15*dt;
+ if(thrust>0)sub.v+=260*dt;
+ else if(thrust<0)sub.v-=420*dt;
+ sub.v-=sub.v*0.55*dt;
  sub.v=clamp(sub.v,-90,190);
  const nx=sub.x+Math.sin(sub.a)*sub.v*dt,ny=sub.y-Math.cos(sub.a)*sub.v*dt;
  if(nx>20&&nx<WORLD.w-20&&ny>20&&ny<WORLD.h-20&&!circleHits(nx,ny,15)){sub.x=nx;sub.y=ny}
