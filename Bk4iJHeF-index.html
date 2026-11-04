@@ -62,16 +62,21 @@ const start={x:475,y:1675}, beacon={x:2475,y:475};
 let rocks, tries=0;
 do{
  rocks=[]; tries++;
- for(let i=0;i<34;i++){
+ for(let i=0;i<48;i++){
    const r=55+Math.random()*85, x=90+r+Math.random()*(WORLD.w-180-2*r), y=90+r+Math.random()*(WORLD.h-180-2*r);
-   if(Math.hypot(x-start.x,y-start.y)<r+150||Math.hypot(x-beacon.x,y-beacon.y)<r+150)continue;
-   if(rocks.some(o=>Math.hypot(x-o.x,y-o.y)<r+o.r+70))continue;
-   rocks.push({x,y,r});
+   if(Math.hypot(x-start.x,y-start.y)<r*1.2+150||Math.hypot(x-beacon.x,y-beacon.y)<r*1.2+150)continue;
+   if(rocks.some(o=>Math.hypot(x-o.x,y-o.y)<(r+o.r)*1.15+50))continue;
+   const n=8+Math.floor(Math.random()*4), pts=[];
+   for(let k=0;k<n;k++){
+     const a=k*Math.PI*2/n+(Math.random()-.5)*.5, rr=r*(.72+Math.random()*.4);
+     pts.push([x+Math.cos(a)*rr,y+Math.sin(a)*rr]);
+   }
+   rocks.push({x,y,r,mr:r*1.15,pts});
  }
 }while(tries<200&&!clearPath());
 function clearPath(){
  const G=50, gw=Math.ceil(WORLD.w/G), gh=Math.ceil(WORLD.h/G);
- const blocked=(x,y)=>rocks.some(o=>Math.hypot(x-o.x,y-o.y)<o.r+25);
+ const blocked=(x,y)=>rocks.some(o=>Math.hypot(x-o.x,y-o.y)<o.mr+25);
  const sx=Math.floor(start.x/G), sy=Math.floor(start.y/G), bx=Math.floor(beacon.x/G), by=Math.floor(beacon.y/G);
  const seen=new Set([sx+","+sy]), q=[[sx,sy]];
  while(q.length){
@@ -93,7 +98,23 @@ window.addEventListener('blur',()=>keys.clear());
 document.getElementById('restart').onclick=reset;
 function reset(){sub={x:start.x,y:start.y,a:0,v:0};done=false;collisionFlash=0;document.getElementById('state').className='state';document.getElementById('state').innerHTML='<i></i> IN PROGRESS'}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function circleHits(x,y,r){return rocks.some(o=>Math.hypot(x-o.x,y-o.y)<r+o.r)}
+function circleHits(x,y,rad){
+ for(const o of rocks){
+   let inside=false;
+   for(let i=0,j=o.pts.length-1;i<o.pts.length;j=i++){
+     const a=o.pts[i], b=o.pts[j];
+     if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;
+   }
+   if(inside)return true;
+   for(let i=0;i<o.pts.length;i++){
+     const a=o.pts[i], b=o.pts[(i+1)%o.pts.length];
+     const vx=b[0]-a[0], vy=b[1]-a[1], wx=x-a[0], wy=y-a[1];
+     const t=Math.max(0,Math.min(1,(vx*wx+vy*wy)/(vx*vx+vy*vy)));
+     if(Math.hypot(x-(a[0]+vx*t),y-(a[1]+vy*t))<rad)return true;
+   }
+ }
+ return false;
+}
 function drawGrid(ctx,w,h,scale,ox,oy){
  ctx.fillStyle='#050b09';ctx.fillRect(0,0,w,h);
  ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
@@ -101,7 +122,7 @@ function drawGrid(ctx,w,h,scale,ox,oy){
  for(let x=0;x<=WORLD.w;x+=100){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,WORLD.h);ctx.stroke()}
  for(let y=0;y<=WORLD.h;y+=100){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WORLD.w,y);ctx.stroke()}
  ctx.strokeStyle='#2d805b';ctx.globalAlpha=.35;ctx.lineWidth=3/scale;ctx.strokeRect(0,0,WORLD.w,WORLD.h);ctx.globalAlpha=1;
- rocks.forEach(o=>{ctx.fillStyle='#10251d';ctx.strokeStyle='#548d6b';ctx.lineWidth=3/scale;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#2d805b';ctx.lineWidth=2/scale;ctx.beginPath();ctx.moveTo(o.x-o.r*.45,o.y-o.r*.1);ctx.lineTo(o.x+o.r*.25,o.y-o.r*.4);ctx.moveTo(o.x-o.r*.2,o.y+o.r*.35);ctx.lineTo(o.x+o.r*.5,o.y+o.r*.1);ctx.stroke()});
+ rocks.forEach(o=>{ctx.fillStyle='#10251d';ctx.strokeStyle='#548d6b';ctx.lineWidth=3/scale;ctx.beginPath();ctx.moveTo(o.pts[0][0],o.pts[0][1]);for(let i=1;i<o.pts.length;i++)ctx.lineTo(o.pts[i][0],o.pts[i][1]);ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='#2d805b';ctx.lineWidth=2/scale;ctx.beginPath();ctx.moveTo(o.x-o.r*.45,o.y-o.r*.1);ctx.lineTo(o.x+o.r*.25,o.y-o.r*.4);ctx.moveTo(o.x-o.r*.2,o.y+o.r*.35);ctx.lineTo(o.x+o.r*.5,o.y+o.r*.1);ctx.stroke()});
  // Beacon
  ctx.strokeStyle='#ffc66d';ctx.fillStyle='#ffc66d';ctx.lineWidth=3/scale;ctx.beginPath();ctx.arc(beacon.x,beacon.y,20,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(beacon.x,beacon.y,5,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.moveTo(beacon.x-34,beacon.y);ctx.lineTo(beacon.x-12,beacon.y);ctx.moveTo(beacon.x+12,beacon.y);ctx.lineTo(beacon.x+34,beacon.y);ctx.moveTo(beacon.x,beacon.y-34);ctx.lineTo(beacon.x,beacon.y-12);ctx.moveTo(beacon.x,beacon.y+12);ctx.lineTo(beacon.x,beacon.y+34);ctx.stroke();
