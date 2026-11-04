@@ -51,19 +51,32 @@ button:hover{background:#123321;border-color:#70d99c}
  <div class="panel"><div class="panel-title">02 / NAVIGATION <span>LOCAL MAP</span></div><div class="hud map-readout"><span>TACTICAL DISPLAY</span></div><canvas id="map" width="800" height="710"></canvas></div>
  <div class="panel"><div class="panel-title">03 / SIGNAL <span>REL BEARING</span></div><div class="hud compass-readout"><span>BEARING <b id="bearing">---</b></span></div><canvas id="signal" width="800" height="710"></canvas></div>
 </section>
-<section class="mission"><div class="mission-tag">CURRENT OBJECTIVE</div><div class="mission-copy"><strong>REACH THE SIGNAL SOURCE</strong><span>Navigate to the amber beacon. Rock formations block your route.</span></div><div class="state" id="state"><i></i> IN PROGRESS</div></section>
-<footer class="bottom"><div class="keyguide"><div class="keyset"><span class="key">W</span><span class="key">S</span><small>FORWARD / REVERSE</small></div><div class="keyset"><span class="key">A</span><span class="key">D</span><small>TURN LEFT / RIGHT</small></div></div><div class="note">OPEN WATER　·　VISIBILITY LOW　·　KEEP COURSE</div><button id="restart">RESTART MISSION ↻</button></footer>
+<section class="mission"><div class="mission-tag">CURRENT OBJECTIVE</div><div class="mission-copy"><strong>REACH THE SIGNAL SOURCE</strong><span>Weave through the cave labyrinth to the amber beacon. Solid rock blocks the direct way.</span></div><div class="state" id="state"><i></i> IN PROGRESS</div></section>
+<footer class="bottom"><div class="keyguide"><div class="keyset"><span class="key">W</span><span class="key">S</span><small>FORWARD / REVERSE</small></div><div class="keyset"><span class="key">A</span><span class="key">D</span><small>TURN LEFT / RIGHT</small></div></div><div class="note">CAVE SYSTEM　·　VISIBILITY LOW　·　KEEP COURSE</div><button id="restart">RESTART MISSION ↻</button></footer>
 </div><div class="scanlines"></div>
 <script>
 (() => {
 const WORLD={w:2600,h:1900}, pilot=document.getElementById('pilot'), map=document.getElementById('map'), sig=document.getElementById('signal');
 const pctx=pilot.getContext('2d'), mctx=map.getContext('2d'), sctx=sig.getContext('2d');
-const rocks=[
-{x:720,y:1240,r:92},{x:900,y:1040,r:65},{x:1190,y:1330,r:125},{x:1420,y:970,r:82},
-{x:1680,y:700,r:115},{x:1940,y:520,r:72},{x:1880,y:1160,r:140},{x:1050,y:520,r:105},
-{x:520,y:680,r:70},{x:2220,y:930,r:95},{x:1450,y:350,r:58},{x:650,y:300,r:88}
-];
-const start={x:340,y:1460}, beacon={x:2180,y:330};
+const GCELL=50, GW=53, GH=39, COLS=26, ROWS=19, maze=[];
+for(let y=0;y<GH;y++){maze.push([]);for(let x=0;x<GW;x++)maze[y].push(true)}
+{
+ const stack=[[0,0]]; maze[1][1]=false;
+ while(stack.length){
+   const t=stack[stack.length-1], cx=t[0], cy=t[1];
+   const dirs=[[1,0],[-1,0],[0,1],[0,-1]].filter(d=>{const nx=cx+d[0],ny=cy+d[1];return nx>=0&&nx<COLS&&ny>=0&&ny<ROWS&&maze[2*ny+1][2*nx+1]});
+   if(!dirs.length){stack.pop();continue}
+   const d=dirs[Math.floor(Math.random()*dirs.length)];
+   maze[2*cy+1+d[1]][2*cx+1+d[0]]=false;
+   maze[2*(cy+d[1])+1][2*(cx+d[0])+1]=false;
+   stack.push([cx+d[0],cy+d[1]]);
+ }
+ for(let i=0;i<40;i++){
+   const gx=1+Math.floor(Math.random()*(GW-2)), gy=1+Math.floor(Math.random()*(GH-2));
+   if((gx+gy)%2===1)maze[gy][gx]=false;
+ }
+}
+const start={x:375,y:1475}, beacon={x:2175,y:375};
 let sub={x:start.x,y:start.y,a:0,v:0}, done=false, collisionFlash=0;
 const keys=new Set();
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['w','a','s','d',' '].includes(k)){e.preventDefault();keys.add(k)}});
@@ -72,7 +85,17 @@ window.addEventListener('blur',()=>keys.clear());
 document.getElementById('restart').onclick=reset;
 function reset(){sub={x:start.x,y:start.y,a:0,v:0};done=false;collisionFlash=0;document.getElementById('state').className='state';document.getElementById('state').innerHTML='<i></i> IN PROGRESS'}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
-function circleHits(x,y,r){return rocks.some(o=>Math.hypot(x-o.x,y-o.y)<r+o.r)}
+function circleHits(x,y,r){
+ const c0=Math.floor((x-r)/GCELL),c1=Math.floor((x+r)/GCELL),r0=Math.floor((y-r)/GCELL),r1=Math.floor((y+r)/GCELL);
+ for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){
+   if(cx<0||cx>=GW||cy<0||cy>=GH)return true;
+   if(maze[cy][cx]){
+     const nx=Math.max(cx*GCELL,Math.min(x,cx*GCELL+GCELL)),ny=Math.max(cy*GCELL,Math.min(y,cy*GCELL+GCELL));
+     if(Math.hypot(x-nx,y-ny)<r)return true;
+   }
+ }
+ return false;
+}
 function drawGrid(ctx,w,h,scale,ox,oy){
  ctx.fillStyle='#050b09';ctx.fillRect(0,0,w,h);
  ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
@@ -80,7 +103,12 @@ function drawGrid(ctx,w,h,scale,ox,oy){
  for(let x=0;x<=WORLD.w;x+=100){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,WORLD.h);ctx.stroke()}
  for(let y=0;y<=WORLD.h;y+=100){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(WORLD.w,y);ctx.stroke()}
  ctx.strokeStyle='#2d805b';ctx.globalAlpha=.35;ctx.lineWidth=3/scale;ctx.strokeRect(0,0,WORLD.w,WORLD.h);ctx.globalAlpha=1;
- rocks.forEach(o=>{ctx.fillStyle='#10251d';ctx.strokeStyle='#548d6b';ctx.lineWidth=3/scale;ctx.beginPath();ctx.arc(o.x,o.y,o.r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.strokeStyle='#2d805b';ctx.lineWidth=2/scale;ctx.beginPath();ctx.moveTo(o.x-o.r*.45,o.y-o.r*.1);ctx.lineTo(o.x+o.r*.25,o.y-o.r*.4);ctx.moveTo(o.x-o.r*.2,o.y+o.r*.35);ctx.lineTo(o.x+o.r*.5,o.y+o.r*.1);ctx.stroke()});
+ for(let gy=0;gy<GH;gy++)for(let gx=0;gx<GW;gx++)if(maze[gy][gx]&&gx*GCELL<WORLD.w&&gy*GCELL<WORLD.h){
+   ctx.fillStyle='#10251d';ctx.strokeStyle='#548d6b';ctx.lineWidth=3/scale;
+   ctx.fillRect(gx*GCELL,gy*GCELL,GCELL,GCELL);ctx.strokeRect(gx*GCELL,gy*GCELL,GCELL,GCELL);
+   ctx.strokeStyle='#2d805b';ctx.lineWidth=2/scale;ctx.beginPath();
+   ctx.moveTo(gx*GCELL+GCELL*.2,gy*GCELL+GCELL*.3);ctx.lineTo(gx*GCELL+GCELL*.7,gy*GCELL+GCELL*.6);ctx.stroke();
+ }
  // Beacon
  ctx.strokeStyle='#ffc66d';ctx.fillStyle='#ffc66d';ctx.lineWidth=3/scale;ctx.beginPath();ctx.arc(beacon.x,beacon.y,20,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(beacon.x,beacon.y,5,0,Math.PI*2);ctx.fill();
  ctx.beginPath();ctx.moveTo(beacon.x-34,beacon.y);ctx.lineTo(beacon.x-12,beacon.y);ctx.moveTo(beacon.x+12,beacon.y);ctx.lineTo(beacon.x+34,beacon.y);ctx.moveTo(beacon.x,beacon.y-34);ctx.lineTo(beacon.x,beacon.y-12);ctx.moveTo(beacon.x,beacon.y+12);ctx.lineTo(beacon.x,beacon.y+34);ctx.stroke();
