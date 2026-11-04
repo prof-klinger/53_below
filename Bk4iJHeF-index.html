@@ -124,12 +124,12 @@ function renderPilot(){
  }
  pctx.globalAlpha=1;
 
- const labels=[['N',0],['E',Math.PI/2],['S',Math.PI],['W',Math.PI*1.5]];
- pctx.font='22px monospace';pctx.textAlign='center';pctx.textBaseline='middle';
- labels.forEach(([label,a])=>{
-   pctx.fillStyle=label==='N'?'#c2ffda':'#548d6b';
-   pctx.fillText(label,Math.sin(a)*(radius+36),-Math.cos(a)*(radius+36));
- });
+ pctx.font='11px monospace';pctx.textAlign='center';pctx.textBaseline='middle';
+ for(let i=0;i<72;i++){
+   const a=i*Math.PI*2/72, major=i%18===0;
+   pctx.fillStyle=major?'#c2ffda':'#548d6b';
+   pctx.fillText(String(i*5).padStart(3,'0'),Math.sin(a)*(radius+36),-Math.cos(a)*(radius+36));
+ }
 
  // Direction pointer: points toward the current heading.
  pctx.save();pctx.rotate(sub.a);
@@ -152,18 +152,19 @@ function renderSignal(){
  sctx.save();sctx.translate(cx,cy);
  sctx.strokeStyle='#286044';sctx.lineWidth=2;
  sctx.beginPath();sctx.arc(0,0,radius,0,Math.PI*2);sctx.stroke();
- for(let i=0;i<36;i++){
-   const a=i*Math.PI*2/36, major=i%9===0, inner=radius-(major?20:10);
+ for(let i=0;i<72;i++){
+   const a=i*Math.PI*2/72, major=i%18===0, inner=radius-(major?20:10);
    sctx.strokeStyle=major?'#8cf5b8':'#548d6b';
    sctx.globalAlpha=major?.95:.4;sctx.lineWidth=major?2:1;
    sctx.beginPath();sctx.moveTo(Math.sin(a)*inner,-Math.cos(a)*inner);sctx.lineTo(Math.sin(a)*radius,-Math.cos(a)*radius);sctx.stroke();
  }
  sctx.globalAlpha=1;
- sctx.font='18px monospace';sctx.textAlign='center';sctx.textBaseline='middle';sctx.fillStyle='#548d6b';
- sctx.fillText('AHEAD',0,-radius-32);
- sctx.fillText('STARBOARD',radius+46,0);
- sctx.fillText('ASTERN',0,radius+32);
- sctx.fillText('PORT',-radius-40,0);
+ sctx.font='11px monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+ for(let i=0;i<72;i++){
+   const a=i*Math.PI*2/72, major=i%18===0;
+   sctx.fillStyle=major?'#c2ffda':'#548d6b';
+   sctx.fillText(String(i*5).padStart(3,'0'),Math.sin(a)*(radius+36),-Math.cos(a)*(radius+36));
+ }
  sctx.save();sctx.rotate(rel);
  sctx.fillStyle='#ffc66d';
  sctx.beginPath();sctx.moveTo(0,-radius-6);sctx.lineTo(-8,-radius+12);sctx.lineTo(8,-radius+12);sctx.closePath();sctx.fill();
