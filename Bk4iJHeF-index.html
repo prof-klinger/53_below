@@ -59,7 +59,13 @@ button:hover{background:#123321;border-color:#70d99c}
 const WORLD={w:3100,h:2300}, pilot=document.getElementById('pilot'), map=document.getElementById('map'), sig=document.getElementById('signal');
 const VMAX=190, VMIN=-90, KNOT_FULL=60;
 const pctx=pilot.getContext('2d'), mctx=map.getContext('2d'), sctx=sig.getContext('2d');
-let crashAudio=null; try{crashAudio=new Audio('crash.mp3'); crashAudio.preload='auto'}catch(e){}
+let crashAudio=null, crashBuf=null, actx=null;
+try{crashAudio=new Audio('crash.mp3'); crashAudio.preload='auto'}catch(e){}
+try{actx=new (window.AudioContext||window.webkitAudioContext)(); fetch('crash.mp3').then(r=>r.arrayBuffer()).then(b=>actx.decodeAudioData(b)).then(buf=>{crashBuf=buf}).catch(()=>{})}catch(e){}
+function playCrash(){
+ if(crashBuf&&actx){if(actx.state==='suspended')actx.resume(); const s=actx.createBufferSource(); s.buffer=crashBuf; s.connect(actx.destination); s.start(0)}
+ else if(crashAudio){crashAudio.currentTime=0; crashAudio.play().catch(()=>{})}
+}
 const start={x:475,y:1675}, beacon={x:2475,y:475};
 let rocks, tries=0;
 do{
@@ -273,7 +279,7 @@ function frame(){
  if(ok(nx,ny)){sub.x=nx;sub.y=ny;wasBlocked=false}
  else if(ok(nx,sub.y)){sub.x=nx;wasBlocked=false}
  else if(ok(sub.x,ny)){sub.y=ny;wasBlocked=false}
- else{if(thrust!==0||Math.abs(sub.v)>30)collisionFlash=Math.min(1,collisionFlash+.15);sub.v*=.3;if(!wasBlocked&&crashAudio){crashAudio.currentTime=0;crashAudio.play().catch(()=>{});wasBlocked=true}}
+ else{if(thrust!==0||Math.abs(sub.v)>30)collisionFlash=Math.min(1,collisionFlash+.15);sub.v*=.3;if(!wasBlocked){playCrash();wasBlocked=true}}
  collisionFlash=Math.max(0,collisionFlash-.035);
  if(!done&&Math.hypot(sub.x-beacon.x,sub.y-beacon.y)<58){done=true;const s=document.getElementById('state');s.className='state done';s.innerHTML='<i></i> OBJECTIVE COMPLETE'}
  const deg=(sub.a*180/Math.PI+360)%360,dirs=['N','NE','E','SE','S','SW','W','NW'];
