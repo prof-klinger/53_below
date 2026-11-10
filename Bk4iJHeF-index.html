@@ -57,7 +57,7 @@ button:hover{background:#123321;border-color:#70d99c}
 <script>
 (() => {
 const WORLD={w:3100,h:2300}, pilot=document.getElementById('pilot'), map=document.getElementById('map'), sig=document.getElementById('signal');
-const VMAX=95, VMIN=-45, KNOT_FULL=30;
+const VMAX=60, VMIN=-30, KNOT_FULL=20;
 const pctx=pilot.getContext('2d'), mctx=map.getContext('2d'), sctx=sig.getContext('2d');
 let crashAudio=null, crashBuf=null, actx=null;
 try{crashAudio=new Audio('crash.mp3'); crashAudio.preload='auto'}catch(e){}
@@ -195,13 +195,13 @@ function renderPilot(){
  const gx=w-52, gy0=cy-radius, gy1=cy+radius, kt=sub.v/VMAX*KNOT_FULL;
  pctx.strokeStyle='#286044';pctx.lineWidth=2;pctx.beginPath();pctx.moveTo(gx,gy0);pctx.lineTo(gx,gy1);pctx.stroke();
  pctx.font='10px monospace';pctx.textAlign='left';pctx.textBaseline='middle';
- for(const k of [-15,0,15,30]){
-   const gy=gy1-(k+15)/45*(gy1-gy0);
+ for(const k of [-10,0,10,20]){
+   const gy=gy1-(k+10)/30*(gy1-gy0);
    pctx.strokeStyle=k===0?'#8cf5b8':'#548d6b';pctx.lineWidth=k===0?2:1;
    pctx.beginPath();pctx.moveTo(gx-6,gy);pctx.lineTo(gx+6,gy);pctx.stroke();
    pctx.fillStyle='#548d6b';pctx.fillText(String(k),gx+10,gy);
  }
- const my=gy1-(Math.max(-15,Math.min(30,kt))+15)/45*(gy1-gy0);
+ const my=gy1-(Math.max(-10,Math.min(20,kt))+10)/30*(gy1-gy0);
  pctx.fillStyle='#ffc66d';
  pctx.beginPath();pctx.moveTo(gx-10,my);pctx.lineTo(gx-2,my-6);pctx.lineTo(gx-2,my+6);pctx.closePath();pctx.fill();
  pctx.fillText('KT',gx+10,gy1+14);
@@ -270,8 +270,8 @@ function frame(){
  const turn=(keys.has('a')?-1:0)+(keys.has('d')?1:0);
  const thrust=(keys.has('w')?1:0)-(keys.has('s')?2:0);
  sub.a+=turn*2.65*dt;
- if(thrust>0)sub.v+=130*dt;
- else if(thrust<0)sub.v-=210*dt;
+ if(thrust>0)sub.v+=80*dt;
+ else if(thrust<0)sub.v-=130*dt;
  sub.v-=sub.v*0.55*dt;
  sub.v=clamp(sub.v,VMIN,VMAX);
  const nx=sub.x+Math.sin(sub.a)*sub.v*dt,ny=sub.y-Math.cos(sub.a)*sub.v*dt;
