@@ -196,12 +196,12 @@ function renderPilot(){
  pctx.strokeStyle='#286044';pctx.lineWidth=2;pctx.beginPath();pctx.moveTo(gx,gy0);pctx.lineTo(gx,gy1);pctx.stroke();
  pctx.font='10px monospace';pctx.textAlign='left';pctx.textBaseline='middle';
  for(const k of [-15,0,15,30]){
-   const gy=gy1-(k+15)/30*(gy1-gy0);
+   const gy=gy1-(k+15)/45*(gy1-gy0);
    pctx.strokeStyle=k===0?'#8cf5b8':'#548d6b';pctx.lineWidth=k===0?2:1;
    pctx.beginPath();pctx.moveTo(gx-6,gy);pctx.lineTo(gx+6,gy);pctx.stroke();
    pctx.fillStyle='#548d6b';pctx.fillText(String(k),gx+10,gy);
  }
- const my=gy1-(Math.max(-15,Math.min(30,kt))+15)/30*(gy1-gy0);
+ const my=gy1-(Math.max(-15,Math.min(30,kt))+15)/45*(gy1-gy0);
  pctx.fillStyle='#ffc66d';
  pctx.beginPath();pctx.moveTo(gx-10,my);pctx.lineTo(gx-2,my-6);pctx.lineTo(gx-2,my+6);pctx.closePath();pctx.fill();
  pctx.fillText('KT',gx+10,gy1+14);
