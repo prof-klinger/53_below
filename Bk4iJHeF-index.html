@@ -59,6 +59,7 @@ button:hover{background:#123321;border-color:#70d99c}
 const WORLD={w:3100,h:2300}, pilot=document.getElementById('pilot'), map=document.getElementById('map'), sig=document.getElementById('signal');
 const VMAX=190, VMIN=-90, KNOT_FULL=60;
 const pctx=pilot.getContext('2d'), mctx=map.getContext('2d'), sctx=sig.getContext('2d');
+let crashAudio=null; try{crashAudio=new Audio('crash.mp3'); crashAudio.preload='auto'}catch(e){}
 const start={x:475,y:1675}, beacon={x:2475,y:475};
 let rocks, tries=0;
 do{
@@ -91,7 +92,7 @@ function clearPath(){
  }
  return false;
 }
-let sub={x:start.x,y:start.y,a:0,v:0}, done=false, collisionFlash=0;
+let sub={x:start.x,y:start.y,a:0,v:0}, done=false, collisionFlash=0, wasBlocked=false;
 const keys=new Set();
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['w','a','s','d',' '].includes(k)){e.preventDefault();keys.add(k)}});
 window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
@@ -269,10 +270,10 @@ function frame(){
  sub.v=clamp(sub.v,VMIN,VMAX);
  const nx=sub.x+Math.sin(sub.a)*sub.v*dt,ny=sub.y-Math.cos(sub.a)*sub.v*dt;
  const ok=(x,y)=>x>20&&x<WORLD.w-20&&y>20&&y<WORLD.h-20&&!circleHits(x,y,15);
- if(ok(nx,ny)){sub.x=nx;sub.y=ny}
- else if(ok(nx,sub.y))sub.x=nx;
- else if(ok(sub.x,ny))sub.y=ny;
- else{if(thrust!==0||Math.abs(sub.v)>30)collisionFlash=Math.min(1,collisionFlash+.15);sub.v*=.3}
+ if(ok(nx,ny)){sub.x=nx;sub.y=ny;wasBlocked=false}
+ else if(ok(nx,sub.y)){sub.x=nx;wasBlocked=false}
+ else if(ok(sub.x,ny)){sub.y=ny;wasBlocked=false}
+ else{if(thrust!==0||Math.abs(sub.v)>30)collisionFlash=Math.min(1,collisionFlash+.15);sub.v*=.3;if(!wasBlocked&&crashAudio){crashAudio.currentTime=0;crashAudio.play().catch(()=>{});wasBlocked=true}}
  collisionFlash=Math.max(0,collisionFlash-.035);
  if(!done&&Math.hypot(sub.x-beacon.x,sub.y-beacon.y)<58){done=true;const s=document.getElementById('state');s.className='state done';s.innerHTML='<i></i> OBJECTIVE COMPLETE'}
  const deg=(sub.a*180/Math.PI+360)%360,dirs=['N','NE','E','SE','S','SW','W','NW'];
